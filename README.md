@@ -15,9 +15,9 @@
 
 ## 更新日志
 
-### v0.1.0 (适配 YoClaw v0.2.0)
+### v0.1.0 (多通道支持)
 
-**适配 YoClaw v0.2.0 新配置结构：**
+**新功能：**
 
 - `agents`、`providers`、`channels` 全部改为 `map` 类型，支持自定义命名
 - 支持配置多个 Web Channel，程序会自动监听所有启用的本地 Web Channel 端口
@@ -30,7 +30,7 @@
 {
     "agents": {
         "myAgent": {
-            "workspace": "~/.yoClaw/workspace",
+            "workspace": "~/.wangshu/workspace",
             "provider": "myProvider",
             "model": "qwen3-max",
             "temperature": 0.7
@@ -67,7 +67,7 @@
         }
     },
     "skill": {
-        "global_path": "~/.yoClaw/skills",
+        "global_path": "~/.wangshu/skills",
         "builtin_path": "./skills"
     }
 }
@@ -82,12 +82,12 @@
 
 ### 下载
 
-从 [Releases](https://github.com/yockii/YoClaw-Manager/releases) 页面下载对应平台的可执行文件。
+从 [Releases](https://github.com/yockii/wangshu-manager/releases) 页面下载对应平台的可执行文件。
 
 ### 运行
 
 ```bash
-# 使用默认配置路径（~/.yoClaw/config.json）
+# 使用默认配置路径（~/.wangshu/config.json）
 ./wangshu-web-admin
 
 # 指定配置文件路径
@@ -319,7 +319,7 @@ Content-Type: application/json
 
 ```
 第一个参数（可选）
-    配置文件路径（默认: ~/.yoClaw/config.json）
+    配置文件路径（默认: ~/.wangshu/config.json）
 ```
 
 示例：
