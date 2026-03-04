@@ -1,11 +1,11 @@
-# YoClaw Web Admin
+# 望舒管理端（网页版）
 
 独立的Web管理程序，提供Web界面和REST API。
 
 ## 功能特性
 
 - 💬 实时聊天界面
-- 🖥️ YoClaw实例管理（启动/停止/重启）
+- 🖥️ 望舒实例管理（启动/停止/重启）
 - 📋 会话管理
 - 📝 任务管理
 - ⏰ 定时任务管理
@@ -17,17 +17,17 @@
 ### 编译
 
 ```bash
-go build -o yoclaw-web-admin
+go build -o wangshu-web-admin   
 ```
 
 ### 运行
 
 ```bash
 # 默认配置（监听8080端口，使用默认token）
-./yoclaw-web-admin
+./wangshu-web-admin
 
 # 自定义配置
-./yoclaw-web-admin -addr :9000 -token my-secret-token -yoclaw-path ~/.yoClaw
+./wangshu-web-admin -addr :9000 -token my-secret-token -wangshu-path ~/.wangshu
 ```
 
 ### 访问
@@ -62,7 +62,7 @@ ws.onmessage = function(event) {
 
 ws.send(JSON.stringify({
     type: 'message',
-    content: 'Hello, YoClaw!'
+    content: 'Hello, Wangshu!'
 }));
 ```
 
@@ -119,8 +119,8 @@ GET /api/instance
     "status": {
         "running": true,
         "pid": 12345,
-        "executable": "/path/to/yoclaw",
-        "config_path": "~/.yoClaw/config.json",
+        "executable": "/path/to/wangshu",
+        "config_path": "~/.wangshu/config.json",
         "start_time": "2024-01-01T00:00:00Z",
         "uptime": "1h30m",
         "auto_started": false
@@ -316,22 +316,22 @@ Content-Type: application/json
     监听地址（默认: :8080）
 -token string
     认证token（默认: default）
--yoclaw-path string
-    YoClaw数据目录路径（默认: ~/.yoClaw）
+-wangshu-path string
+    望舒数据目录路径（默认: ~/.wangshu）
 ```
 
 ## 架构说明
 
 Web管理程序作为独立的服务运行：
 
-1. **WebSocket服务器** - 接收来自YoClaw Web Channel的连接
+1. **WebSocket服务器** - 接收来自望舒 Web Channel的连接
 2. **HTTP API** - 提供管理功能
 3. **静态文件服务** - 提供Web界面
 
-与YoClaw主程序的交互：
+与望舒主程序的交互：
 
 ```
-YoClaw主程序 (Web Channel)
+望舒主程序 (Web Channel)
     ↓ WebSocket
 Web管理程序
     ↓ HTTP/WebSocket

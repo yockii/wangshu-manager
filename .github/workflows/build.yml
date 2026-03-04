@@ -29,27 +29,27 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o yoclaw-manager ./cmd/main.go
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o wangshu-manager ./cmd/main.go
 
       - name: Create release directory
         run: |
           mkdir -p release/${{ matrix.os }}_${{ matrix.arch }}
-          cp yoclaw-manager release/${{ matrix.os }}_${{ matrix.arch }}/
+          cp wangshu-manager release/${{ matrix.os }}_${{ matrix.arch }}/
           cp -r static release/${{ matrix.os }}_${{ matrix.arch }}/
           if [ "${{ matrix.os }}" = "windows" ]; then
-            mv release/${{ matrix.os }}_${{ matrix.arch }}/yoclaw-manager release/${{ matrix.os }}_${{ matrix.arch }}/yoclaw-manager.exe
+            mv release/${{ matrix.os }}_${{ matrix.arch }}/wangshu-manager release/${{ matrix.os }}_${{ matrix.arch }}/wangshu-manager.exe
           fi
 
       - name: Create zip archive
         run: |
           cd release
-          zip -r yoclaw-manager-${{ matrix.os }}-${{ matrix.arch }}.zip ${{ matrix.os }}_${{ matrix.arch }}
+          zip -r wangshu-manager-${{ matrix.os }}-${{ matrix.arch }}.zip ${{ matrix.os }}_${{ matrix.arch }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yoclaw-manager-${{ matrix.os }}-${{ matrix.arch }}
-          path: release/yoclaw-manager-${{ matrix.os }}-${{ matrix.arch }}.zip
+          name: wangshu-manager-${{ matrix.os }}-${{ matrix.arch }}
+          path: release/wangshu-manager-${{ matrix.os }}-${{ matrix.arch }}.zip
 
   release:
     needs: build

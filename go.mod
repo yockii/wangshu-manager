@@ -1,4 +1,4 @@
-module github.com/yockii/yoclaw-manager
+module github.com/yockii/wangshu-manager
 
 go 1.25.0
 

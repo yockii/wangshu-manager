@@ -80,13 +80,13 @@ func (pm *ProcessManager) FindExecutable() (string, error) {
 		name := entry.Name()
 		nameLower := strings.ToLower(name)
 
-		if pm.isYoClawProcessName(nameLower) && pm.isExecutable(name) {
+		if pm.isWangshuProcessName(nameLower) && pm.isExecutable(name) {
 			candidates = append(candidates, name)
 		}
 	}
 
 	if len(candidates) == 0 {
-		return "", fmt.Errorf("YoClaw executable not found in %s", execDir)
+		return "", fmt.Errorf("wangshu executable not found in %s", execDir)
 	}
 
 	if len(candidates) == 1 {
@@ -94,18 +94,18 @@ func (pm *ProcessManager) FindExecutable() (string, error) {
 		pm.mu.Lock()
 		pm.executablePath = path
 		pm.mu.Unlock()
-		slog.Info("Found YoClaw executable", "path", path)
+		slog.Info("Found wangshu executable", "path", path)
 		return path, nil
 	}
 
 	for _, name := range candidates {
-		if strings.EqualFold(name, "yoclaw") || strings.EqualFold(name, "yoclaw.exe") ||
-			strings.EqualFold(name, "YoClaw") || strings.EqualFold(name, "YoClaw.exe") {
+		if strings.EqualFold(name, "wangshu") || strings.EqualFold(name, "wangshu.exe") ||
+			strings.EqualFold(name, "wangshu") || strings.EqualFold(name, "wangshu.exe") {
 			path := filepath.Join(execDir, name)
 			pm.mu.Lock()
 			pm.executablePath = path
 			pm.mu.Unlock()
-			slog.Info("Found YoClaw executable", "path", path)
+			slog.Info("Found wangshu executable", "path", path)
 			return path, nil
 		}
 	}
@@ -114,7 +114,7 @@ func (pm *ProcessManager) FindExecutable() (string, error) {
 	pm.mu.Lock()
 	pm.executablePath = path
 	pm.mu.Unlock()
-	slog.Info("Found YoClaw executable", "path", path, "note", "multiple candidates found, using first one")
+	slog.Info("Found wangshu executable", "path", path, "note", "multiple candidates found, using first one")
 	return path, nil
 }
 
@@ -156,7 +156,7 @@ func (pm *ProcessManager) findProcessWindows() (int, error) {
 		imageName := strings.Trim(parts[0], "\"")
 		imageNameLower := strings.ToLower(imageName)
 
-		if pm.isYoClawProcessName(imageNameLower) {
+		if pm.isWangshuProcessName(imageNameLower) {
 			pidStr := strings.Trim(parts[1], "\"")
 			var pid int
 			if _, err := fmt.Sscanf(pidStr, "%d", &pid); err == nil {
@@ -165,7 +165,7 @@ func (pm *ProcessManager) findProcessWindows() (int, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("no running YoClaw process found")
+	return 0, fmt.Errorf("no running wangshu process found")
 }
 
 func (pm *ProcessManager) findProcessUnix() (int, error) {
@@ -185,7 +185,7 @@ func (pm *ProcessManager) findProcessUnix() (int, error) {
 		command := strings.Join(fields[10:], " ")
 		commandLower := strings.ToLower(command)
 
-		if pm.isYoClawProcessName(commandLower) && !strings.Contains(commandLower, "yoclaw-manager") {
+		if pm.isWangshuProcessName(commandLower) && !strings.Contains(commandLower, "wangshu-manager") {
 			var pid int
 			if _, err := fmt.Sscanf(fields[1], "%d", &pid); err == nil {
 				return pid, nil
@@ -193,15 +193,15 @@ func (pm *ProcessManager) findProcessUnix() (int, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("no running YoClaw process found")
+	return 0, fmt.Errorf("no running wangshu process found")
 }
 
-func (pm *ProcessManager) isYoClawProcessName(name string) bool {
+func (pm *ProcessManager) isWangshuProcessName(name string) bool {
 	name = strings.ToLower(name)
 
 	basePatterns := []string{
-		"yoclaw",
-		"yoclaw.exe",
+		"wangshu",
+		"wangshu.exe",
 	}
 
 	for _, pattern := range basePatterns {
@@ -210,12 +210,12 @@ func (pm *ProcessManager) isYoClawProcessName(name string) bool {
 		}
 	}
 
-	if strings.HasPrefix(name, "./yoclaw") || strings.HasPrefix(name, ".\\yoclaw") {
+	if strings.HasPrefix(name, "./wangshu") || strings.HasPrefix(name, ".\\wangshu") {
 		return true
 	}
 
-	if strings.HasPrefix(name, "yoclaw-") {
-		suffix := strings.TrimPrefix(name, "yoclaw-")
+	if strings.HasPrefix(name, "wangshu-") {
+		suffix := strings.TrimPrefix(name, "wangshu-")
 		validSuffixes := []string{
 			"windows", "linux", "darwin", "freebsd", "openbsd", "netbsd",
 			"amd64", "386", "arm", "arm64", "mips", "mips64", "ppc64", "ppc64le", "riscv64", "s390x",
@@ -227,8 +227,8 @@ func (pm *ProcessManager) isYoClawProcessName(name string) bool {
 		}
 	}
 
-	if strings.HasPrefix(name, "yoclaw.") {
-		suffix := strings.TrimPrefix(name, "yoclaw.")
+	if strings.HasPrefix(name, "wangshu.") {
+		suffix := strings.TrimPrefix(name, "wangshu.")
 		if strings.HasPrefix(suffix, "v") || strings.HasPrefix(suffix, "1.") || strings.HasPrefix(suffix, "2.") || strings.HasPrefix(suffix, "3.") {
 			return true
 		}
@@ -276,7 +276,7 @@ func (pm *ProcessManager) Start(autoStarted bool) error {
 
 	if pm.cmd != nil && pm.cmd.Process != nil {
 		if pm.isProcessRunning(pm.cmd.Process) {
-			return fmt.Errorf("YoClaw is already running with PID %d", pm.cmd.Process.Pid)
+			return fmt.Errorf("wangshu is already running with PID %d", pm.cmd.Process.Pid)
 		}
 	}
 
@@ -290,10 +290,10 @@ func (pm *ProcessManager) Start(autoStarted bool) error {
 	pm.cmd.Stderr = os.Stderr
 
 	if err := pm.cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start YoClaw: %w", err)
+		return fmt.Errorf("failed to start wangshu: %w", err)
 	}
 
-	slog.Info("YoClaw process started", "pid", pm.cmd.Process.Pid, "auto_started", autoStarted)
+	slog.Info("wangshu process started", "pid", pm.cmd.Process.Pid, "auto_started", autoStarted)
 
 	go func() {
 		err := pm.cmd.Wait()
@@ -301,9 +301,9 @@ func (pm *ProcessManager) Start(autoStarted bool) error {
 		pm.cmd = nil
 		pm.mu.Unlock()
 		if err != nil {
-			slog.Error("YoClaw process exited", "error", err)
+			slog.Error("wangshu process exited", "error", err)
 		} else {
-			slog.Info("YoClaw process exited normally")
+			slog.Info("wangshu process exited normally")
 		}
 	}()
 
@@ -318,9 +318,9 @@ func (pm *ProcessManager) Stop() error {
 		if pm.isProcessRunning(pm.cmd.Process) {
 			pid := pm.cmd.Process.Pid
 			if err := pm.terminateProcess(pid); err != nil {
-				return fmt.Errorf("failed to stop YoClaw process: %w", err)
+				return fmt.Errorf("failed to stop wangshu process: %w", err)
 			}
-			slog.Info("YoClaw process stopped", "pid", pid)
+			slog.Info("wangshu process stopped", "pid", pid)
 		}
 		pm.cmd = nil
 		return nil
@@ -328,26 +328,26 @@ func (pm *ProcessManager) Stop() error {
 
 	pid, err := pm.FindRunningProcess()
 	if err != nil {
-		return fmt.Errorf("no running YoClaw process found: %w", err)
+		return fmt.Errorf("no running wangshu process found: %w", err)
 	}
 
 	if err := pm.terminateProcess(pid); err != nil {
-		return fmt.Errorf("failed to stop YoClaw process: %w", err)
+		return fmt.Errorf("failed to stop wangshu process: %w", err)
 	}
 
-	slog.Info("YoClaw process stopped", "pid", pid)
+	slog.Info("wangshu process stopped", "pid", pid)
 	return nil
 }
 
 func (pm *ProcessManager) Restart() error {
 	if err := pm.Stop(); err != nil {
-		slog.Warn("Failed to stop YoClaw during restart", "error", err)
+		slog.Warn("Failed to stop wangshu during restart", "error", err)
 	}
 
 	time.Sleep(1 * time.Second)
 
 	if err := pm.Start(false); err != nil {
-		return fmt.Errorf("failed to start YoClaw after restart: %w", err)
+		return fmt.Errorf("failed to start wangshu after restart: %w", err)
 	}
 
 	return nil
@@ -386,7 +386,7 @@ func (pm *ProcessManager) isProcessRunning(process *os.Process) bool {
 				imageName := strings.Trim(parts[0], "\"")
 				pidStr := strings.Trim(parts[1], "\"")
 				if strings.Contains(pidStr, fmt.Sprintf("%d", process.Pid)) {
-					return pm.isYoClawProcessName(strings.ToLower(imageName))
+					return pm.isWangshuProcessName(strings.ToLower(imageName))
 				}
 			}
 		}
@@ -404,11 +404,11 @@ func (pm *ProcessManager) AutoStartIfNotRunning() error {
 	}
 
 	if !status.Running {
-		slog.Info("YoClaw not running, attempting to auto-start")
+		slog.Info("wangshu not running, attempting to auto-start")
 		if err := pm.Start(true); err != nil {
-			return fmt.Errorf("failed to auto-start YoClaw: %w", err)
+			return fmt.Errorf("failed to auto-start wangshu: %w", err)
 		}
-		slog.Info("YoClaw auto-started successfully")
+		slog.Info("wangshu auto-started successfully")
 	}
 
 	return nil

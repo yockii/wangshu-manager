@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/yockii/yoclaw-manager/internal/config"
-	"github.com/yockii/yoclaw-manager/internal/process"
+	"github.com/yockii/wangshu-manager/internal/config"
+	"github.com/yockii/wangshu-manager/internal/process"
 )
 
 type Server struct {
@@ -20,13 +20,13 @@ type Server struct {
 	upgrader       websocket.Upgrader
 	clients        map[string]*websocket.Conn
 	clientsMu      sync.RWMutex
-	yoclawPath     string
+	wangshuPath    string
 	cfg            *config.Config
 	cfgMu          sync.RWMutex
 	processManager *process.ProcessManager
 }
 
-func NewServer(cfg *config.Config, yoclawPath string) (*Server, error) {
+func NewServer(cfg *config.Config, wangshuPath string) (*Server, error) {
 	addr := cfg.Channels.Web.HostAddress
 	if addr == "" {
 		addr = ":8080"
@@ -39,13 +39,13 @@ func NewServer(cfg *config.Config, yoclawPath string) (*Server, error) {
 			},
 		},
 		clients:        make(map[string]*websocket.Conn),
-		yoclawPath:     yoclawPath,
+		wangshuPath:    wangshuPath,
 		cfg:            cfg,
-		processManager: process.NewProcessManager(yoclawPath),
+		processManager: process.NewProcessManager(wangshuPath),
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ws", s.handleYoClawWebSocket)
+	mux.HandleFunc("/ws", s.handlewangshuWebSocket)
 	mux.HandleFunc("/webWs", s.handleWebWebSocket)
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/", s.handleStatic)
@@ -63,7 +63,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() error {
-	slog.Info("YoClaw Manager stopping")
+	slog.Info("wangshu Manager stopping")
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 	for _, conn := range s.clients {
@@ -72,7 +72,7 @@ func (s *Server) Stop() error {
 	return s.server.Close()
 }
 
-func (s *Server) handleYoClawWebSocket(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlewangshuWebSocket(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if !s.validateToken(token) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -85,21 +85,21 @@ func (s *Server) handleYoClawWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientID := "yoclaw-" + r.RemoteAddr
+	clientID := "wangshu-" + r.RemoteAddr
 	s.clientsMu.Lock()
 	s.clients[clientID] = conn
 	s.clientsMu.Unlock()
 
-	slog.Info("YoClaw connected", "client", clientID)
-	s.broadcastYoClawStatus("connected")
+	slog.Info("wangshu connected", "client", clientID)
+	s.broadcastWangshuStatus("connected")
 
 	defer func() {
 		s.clientsMu.Lock()
 		delete(s.clients, clientID)
 		s.clientsMu.Unlock()
 		conn.Close()
-		slog.Info("YoClaw disconnected", "client", clientID)
-		s.broadcastYoClawStatus("disconnected")
+		slog.Info("wangshu disconnected", "client", clientID)
+		s.broadcastWangshuStatus("disconnected")
 	}()
 
 	for {
@@ -144,30 +144,30 @@ func (s *Server) handleWebWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Web client connected", "client", webClientID, "total", len(s.clients))
 
-	// 立即发送YoClaw的当前连接状态
+	// 立即发送wangshu的当前连接状态
 	s.clientsMu.RLock()
-	yoclawConnected := false
+	wangshuConnected := false
 	for clientID := range s.clients {
-		if len(clientID) > 7 && clientID[:7] == "yoclaw-" {
-			yoclawConnected = true
+		if len(clientID) > 7 && clientID[:7] == "wangshu-" {
+			wangshuConnected = true
 			break
 		}
 	}
 	s.clientsMu.RUnlock()
 
 	status := "disconnected"
-	if yoclawConnected {
+	if wangshuConnected {
 		status = "connected"
 	}
 
 	msg := map[string]interface{}{
-		"type":   "yoclaw_status",
+		"type":   "wangshu_status",
 		"status": status,
 	}
 	if err := conn.WriteJSON(msg); err != nil {
-		slog.Error("Failed to send initial YoClaw status", "error", err)
+		slog.Error("Failed to send initial wangshu status", "error", err)
 	} else {
-		slog.Info("Sent initial YoClaw status", "status", status)
+		slog.Info("Sent initial wangshu status", "status", status)
 	}
 
 	for {
@@ -183,20 +183,20 @@ func (s *Server) handleWebWebSocket(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Received message from web client", "client", webClientID, "type", msg.Type, "content", msg.Content)
 
 		s.clientsMu.RLock()
-		yoclawConnected := false
-		yoclawCount := 0
-		for clientID, yoclawConn := range s.clients {
-			if len(clientID) > 7 && clientID[:7] == "yoclaw-" {
-				yoclawCount++
-				if err := yoclawConn.WriteJSON(msg); err != nil {
-					slog.Error("Failed to forward message to YoClaw", "error", err)
+		wangshuConnected := false
+		wangshuCount := 0
+		for clientID, wangshuConn := range s.clients {
+			if len(clientID) > 7 && clientID[:7] == "wangshu-" {
+				wangshuCount++
+				if err := wangshuConn.WriteJSON(msg); err != nil {
+					slog.Error("Failed to forward message to wangshu", "error", err)
 				} else {
-					slog.Info("Forwarded message to YoClaw", "client", clientID)
-					yoclawConnected = true
+					slog.Info("Forwarded message to wangshu", "client", clientID)
+					wangshuConnected = true
 				}
 			}
 		}
-		slog.Info("Total YoClaw connections", "count", yoclawCount)
+		slog.Info("Total wangshu connections", "count", wangshuCount)
 
 		broadcastCount := 0
 		webClientCount := 0
@@ -223,10 +223,10 @@ func (s *Server) handleWebWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 		s.clientsMu.RUnlock()
 
-		slog.Info("Message forwarding summary", "yoclaw_count", yoclawCount, "web_client_count", webClientCount, "broadcast_count", broadcastCount)
+		slog.Info("Message forwarding summary", "wangshu_count", wangshuCount, "web_client_count", webClientCount, "broadcast_count", broadcastCount)
 
-		if !yoclawConnected {
-			slog.Warn("YoClaw not connected, message not forwarded")
+		if !wangshuConnected {
+			slog.Warn("wangshu not connected, message not forwarded")
 		}
 		if broadcastCount > 0 {
 			slog.Info("Broadcasted message to other web clients", "count", broadcastCount)
@@ -253,28 +253,28 @@ func (s *Server) broadcastToClients(msg interface{}) {
 	slog.Info("Broadcasted message to web clients", "count", webClientCount)
 }
 
-func (s *Server) broadcastYoClawStatus(status string) {
+func (s *Server) broadcastWangshuStatus(status string) {
 	s.clientsMu.RLock()
 	defer s.clientsMu.RUnlock()
 
 	msg := map[string]interface{}{
-		"type":   "yoclaw_status",
+		"type":   "wangshu_status",
 		"status": status,
 	}
 
 	webClientCount := 0
 	for clientID, conn := range s.clients {
-		// 只向web客户端发送状态消息，不发送给YoClaw
+		// 只向web客户端发送状态消息，不发送给wangshu
 		if len(clientID) > 4 && clientID[:4] == "web-" {
 			if err := conn.WriteJSON(msg); err != nil {
-				slog.Error("Failed to broadcast YoClaw status", "error", err)
+				slog.Error("Failed to broadcast wangshu status", "error", err)
 			} else {
 				webClientCount++
-				slog.Debug("Broadcasted YoClaw status", "client", clientID, "status", status)
+				slog.Debug("Broadcasted wangshu status", "client", clientID, "status", status)
 			}
 		}
 	}
-	slog.Info("Broadcasted YoClaw status to web clients", "count", webClientCount, "status", status)
+	slog.Info("Broadcasted wangshu status to web clients", "count", webClientCount, "status", status)
 }
 
 func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
@@ -684,7 +684,7 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		s.cfg = &newConfig
 		s.cfgMu.Unlock()
 
-		if err := config.SaveConfig(s.yoclawPath, &newConfig); err != nil {
+		if err := config.SaveConfig(s.wangshuPath, &newConfig); err != nil {
 			slog.Error("Failed to save config", "error", err)
 			http.Error(w, "Failed to save config", http.StatusInternalServerError)
 			return
@@ -776,25 +776,25 @@ func (s *Server) restartInstance(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	yoclawPath := "~/.yoClaw/config.json"
+	wangshuPath := "~/.wangshu/config.json"
 	if len(os.Args) > 1 {
-		yoclawPath = os.Args[1]
+		wangshuPath = os.Args[1]
 	}
 
-	cfg, err := config.LoadConfig(yoclawPath)
+	cfg, err := config.LoadConfig(wangshuPath)
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
 	}
 
-	server, err := NewServer(cfg, yoclawPath)
+	server, err := NewServer(cfg, wangshuPath)
 	if err != nil {
 		slog.Error("Failed to create server", "error", err)
 		os.Exit(1)
 	}
 
 	if err := server.processManager.AutoStartIfNotRunning(); err != nil {
-		slog.Warn("Failed to auto-start YoClaw instance", "error", err)
+		slog.Warn("Failed to auto-start wangshu instance", "error", err)
 	}
 
 	if err := server.Start(); err != nil {
